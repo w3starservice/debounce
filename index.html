@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+	.report input, .natalreport select {
+		float: right;
+		min-width: 320px;
+		min-height: 40px;
+	}
+	.report td {
+		padding: 0 15px;
+		position: relative;
+	}
+	div#suggestions {
+		position: absolute;
+		left: 115px;
+		top: 34px;
+		z-index: 9999;
+		background-color: white;
+		width: 307px;
+		border: 1px solid;
+		padding: 0 5px;
+	}
+	.suggestion-item {
+		padding: 4px 0px;
+		font-size: 15px;
+	}
+	</style>
+</head>
+<body>
+  <div class="wrap natalreport">
+			<h2>Debounce use here</h2>
+			<a herf="https://www.here.com/docs/bundle/geocoding-and-search-api-developer-guide/page/topics/endpoint-geocode-brief.html" target="_blank">HERE Geocoding and Search doc</a>
+			<div class="container">
+			<form id="report" name="report" method="post" role="form">
+			<table>
+			<tr>
+			<td>
+			<label for="fullname">Full Name</label>
+			<input type="text" id="fullname" name="fullname" placeholder="Full Name">
+			</td>
+			<td>
+			<label for="dob">Date of birth</label>
+			<input type="date" id="dob" name="dob" placeholder="">
+			</td>
+			</tr>
+			<tr>
+			<td>
+			<label for="place">Birth Place</label>
+			<input type="text" id="place" name="place" placeholder="">
+			<div id="suggestions"></div>
+			</td>
+			<td>
+			<input type="submit" id="submitreport" name="submitreport" value="Submit">
+			<input type="hidden" id="lat" name="lat" value="">
+			<input type="hidden" id="lon" name="lon" value="">
+			</td>
+			</tr>
+			</table>
+			</form>
+			<div class="result"></div>
+			</div>
+	</div>
+	<script>
+        // Debounce function
+        function debounce(func, delay) {
+            let debounceTimer;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        // Function to fetch location suggestions
+        async function fetchLocationSuggestions(query) {
+            const apiKey = 'xxxx';
+            const apiUrl = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(query)}&apiKey=${apiKey}`;
+            
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                displaySuggestions(data.items);
+            } catch (error) {
+                console.error('Error fetching location data:', error);
+            }
+        }
+
+        // Function to display suggestions
+        function displaySuggestions(suggestions) {
+            const suggestionsContainer = document.getElementById('suggestions');
+            suggestionsContainer.innerHTML = '';
+
+            suggestions.forEach(suggestion => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item';
+                suggestionItem.textContent = suggestion.address.label;
+                suggestionItem.addEventListener('click', () => {
+                    document.getElementById('place').value = suggestion.address.label;
+                    document.getElementById('lat').value = suggestion.position.lat;
+                    document.getElementById('lon').value = suggestion.position.lng;
+                    suggestionsContainer.innerHTML = '';
+                });
+                suggestionsContainer.appendChild(suggestionItem);
+            });
+        }
+
+        // Debounced version of the fetchLocationSuggestions function with a 300ms delay
+        const debouncedFetchLocationSuggestions = debounce(fetchLocationSuggestions, 300);
+
+        // Event listener for the location input field
+        const locationInput = document.getElementById('place');
+        locationInput.addEventListener('input', (event) => {
+            const query = event.target.value;
+            if (query) {
+                debouncedFetchLocationSuggestions(query);
+            } else {
+                document.getElementById('suggestions').innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
